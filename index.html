@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Casino GyC</title>
+  <style>
+    :root{
+      --bg1:#000;
+      --bg2:#111;
+      --accent:#ffcc00;
+      --muted:#aaaaaa;
+      --card:#0f0f0f;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, "Helvetica Neue", Arial, sans-serif;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* layout */
+    .container{max-width:980px;margin:28px auto;padding:24px;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo img{height:64px;object-fit:contain}
+    .brand-title{font-weight:700;font-size:20px;color:var(--accent)}
+    /* edit button */
+    .edit-btn{
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.06);
+      color:#fff;padding:8px 12px;border-radius:10px;
+      cursor:pointer;font-weight:600;font-size:13px;
+      display:inline-flex;align-items:center;gap:8px;
+    }
+    .edit-btn:hover{transform:translateY(-1px)}
+    /* CTA card */
+    .card{
+      margin-top:22px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;padding:28px;box-shadow:0 6px 18px rgba(0,0,0,0.6);
+      display:flex;flex-direction:column;align-items:center;gap:16px;border:1px solid rgba(255,255,255,0.03)
+    }
+    .cta-btn{
+      display:inline-block;padding:14px 26px;border-radius:10px;font-weight:800;
+      text-decoration:none;background:var(--accent);color:#000;font-size:18px;
+      box-shadow:0 6px 14px rgba(0,0,0,0.4);
+    }
+    .small{font-size:13px;color:var(--muted);margin:0}
+    .promos{margin-top:20px;padding:18px;width:100%;border-radius:10px;background:linear-gradient(180deg, rgba(255,204,0,0.04), transparent)}
+    .promos h1{margin:0;color:var(--accent);font-size:22px}
+    .promos h2{margin:8px 0 0 0;font-size:18px}
+    .promos p{margin:6px 0 0 0;color:var(--muted)}
+    footer{text-align:center;margin-top:28px;color:#777;font-size:13px}
+
+    /* phone display */
+    .phone-display{font-weight:700;color:#fff;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.03);font-size:14px}
+
+    /* responsive */
+    @media (max-width:640px){
+      .logo img{height:48px}
+      .container{padding:16px}
+      .card{padding:18px}
+      .cta-btn{width:100%;text-align:center}
+      header{flex-direction:column;align-items:flex-start;gap:10px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <!-- logo - si querés cambiar la imagen poné la URL aquí -->
+        <img src="https://redzipa2.netlify.app/logo.png" alt="Logo Casino Vegas 365" />
+        <div>
+          <div class="brand-title">Casino GyC</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Las mejores ruletas y +6000 slots</div>
+        </div>
+      </div>
+
+      <!-- botón visible para editar el número / enlace -->
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="currentPhone" class="phone-display" title="Destino actual">Cargando...</div>
+        <button id="editBtn" class="edit-btn" aria-label="Editar número">✏️ Editar número</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card" role="region" aria-label="Llamada a la acción">
+        <a id="ctaLink" class="cta-btn" href="#" target="_blank" rel="noopener noreferrer">CREAR MI USUARIO</a>
+        <p class="small">Mínimo de carga $1000</p>
+
+        <div class="promos" aria-hidden="false">
+          <h1>PROMOS ACTIVAS</h1>
+          <h2>LAS MEJORES RULETAS DE +6000 SLOTS Y MÁS</h2>
+          <p>PAGOS 24/7 SIN LÍMITES DE RETIRO</p>
+        </div>
+      </section>
+
+      <!-- sección extra con info -->
+      <section style="margin-top:18px;color:var(--muted);font-size:14px">
+        <p><strong>Importante:</strong> podés ingresar un número (solo dígitos) o una URL completa. Si ingresás sólo números se construirá automáticamente un enlace de WhatsApp con el formato <code>https://wa.me/&lt;números&gt;</code>.</p>
+      </section>
+    </main>
+
+    <footer>
+      &copy; <span id="year"></span> Casino GyC - Todos los derechos reservados
+    </footer>
+  </div>
+
+  <script>
+    /*******************************
+     * CONFIGURACIÓN:
+     * Cambiá el valor por defecto aquí si querés:
+     *  - puede ser sólo dígitos: "5491123456789"
+     *  - o una URL completa: "https://wa.link/abcd" ó "https://api.whatsapp.com/send?phone=5491123456789"
+     *******************************/
+    (function(){
+      const STORAGE_KEY = 'landing_cta_destino_v1';
+
+      // valor por defecto si no existe en localStorage
+      const defaultDestino = '5491138627451'; // <-- cambiar aquí si querés otro por defecto
+
+      const ctaLink = document.getElementById('ctaLink');
+      const currentPhone = document.getElementById('currentPhone');
+      const editBtn = document.getElementById('editBtn');
+      const yearSpan = document.getElementById('year');
+
+      // utilidad: decide si es URL completa
+      function isFullUrl(value){
+        try{
+          const u = new URL(value);
+          return !!u;
+        }catch(e){
+          return false;
+        }
+      }
+
+      // utilidad: limpiar y validar dígitos
+      function onlyDigits(value){
+        return value.replace(/\D+/g,'');
+      }
+
+      // Construye el href final:
+      // - si el usuario ingresó una URL completa, la usamos tal cual
+      // - si ingresó solo dígitos, construimos https://wa.me/<digits>
+      function buildHref(value){
+        if(!value) return '#';
+        value = value.trim();
+        if(isFullUrl(value)) return value;
+        // si tiene espacios o símbolos, quedate con dígitos
+        const digits = onlyDigits(value);
+        if(!digits) return '#';
+        // Si el usuario ya incluye el prefijo '00' o '+' no hace falta, wa.me necesita solo el número internacional sin signos
+        return 'https://wa.me/' + digits;
+      }
+
+      // Muestra el texto actual (para el admin)
+      function displayCurrent(value){
+        if(!value) { currentPhone.textContent = 'No configurado'; return; }
+        if(isFullUrl(value)){
+          currentPhone.textContent = value.length > 40 ? value.slice(0,37)+'...' : value;
+          currentPhone.title = value;
+        } else {
+          const digits = onlyDigits(value);
+          currentPhone.textContent = '+' + digits;
+          currentPhone.title = 'wa.me/' + digits;
+        }
+      }
+
+      // lee localStorage o pone default
+      function loadDestino(){
+        try{
+          const s = localStorage.getItem(STORAGE_KEY);
+          return s ? s : defaultDestino;
+        }catch(e){
+          return defaultDestino;
+        }
+      }
+
+      // guarda
+      function saveDestino(val){
+        try{
+          localStorage.setItem(STORAGE_KEY, val);
+        }catch(e){
+          // ignore
+        }
+      }
+
+      // inicializar
+      function init(){
+        const destino = loadDestino();
+        const href = buildHref(destino);
+        ctaLink.href = href;
+        displayCurrent(destino);
+        yearSpan.textContent = new Date().getFullYear();
+      }
+
+      // evento editar
+      editBtn.addEventListener('click', function(){
+        const previo = loadDestino();
+        // prompt amigable
+        const input = prompt(
+`Editar destino de "CREAR MI USUARIO":
+- Ingresá un número (solo dígitos) -> se construye https://wa.me/<números>
+- O pegá una URL completa (ej: https://wa.link/abcd)
+Valor actual: ${previo || '(vacío)'}`, previo || ''
+        );
+        if(input === null) return; // canceló
+
+        const trimmed = input.trim();
+        if(trimmed === ''){
+          if(!confirm('Ingresaste un valor vacío. ¿Querés eliminar el destino y dejarlo sin link?')) return;
+          saveDestino('');
+          ctaLink.href = '#';
+          displayCurrent('');
+          return;
+        }
+
+        // si parece un número, validamos que haya al menos 6 dígitos
+        const digitsOnly = onlyDigits(trimmed);
+        if(!isFullUrl(trimmed) && digitsOnly.length < 6){
+          alert('Número inválido: ingresá al menos 6 dígitos o pega una URL válida.');
+          return;
+        }
+
+        // guardamos y actualizamos
+        saveDestino(trimmed);
+        ctaLink.href = buildHref(trimmed);
+        displayCurrent(trimmed);
+        alert('Destino actualizado correctamente.');
+      });
+
+      // init al cargar
+      init();
+    })();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Casino GyC</title>
+  <style>
+    :root{
+      --bg1:#000;
+      --bg2:#111;
+      --accent:#ffcc00;
+      --muted:#aaaaaa;
+      --card:#0f0f0f;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, "Helvetica Neue", Arial, sans-serif;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* layout */
+    .container{max-width:980px;margin:28px auto;padding:24px;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo img{height:64px;object-fit:contain}
+    .brand-title{font-weight:700;font-size:20px;color:var(--accent)}
+    /* edit button */
+    .edit-btn{
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.06);
+      color:#fff;padding:8px 12px;border-radius:10px;
+      cursor:pointer;font-weight:600;font-size:13px;
+      display:inline-flex;align-items:center;gap:8px;
+    }
+    .edit-btn:hover{transform:translateY(-1px)}
+    /* CTA card */
+    .card{
+      margin-top:22px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;padding:28px;box-shadow:0 6px 18px rgba(0,0,0,0.6);
+      display:flex;flex-direction:column;align-items:center;gap:16px;border:1px solid rgba(255,255,255,0.03)
+    }
+    .cta-btn{
+      display:inline-block;padding:14px 26px;border-radius:10px;font-weight:800;
+      text-decoration:none;background:var(--accent);color:#000;font-size:18px;
+      box-shadow:0 6px 14px rgba(0,0,0,0.4);
+    }
+    .small{font-size:13px;color:var(--muted);margin:0}
+    .promos{margin-top:20px;padding:18px;width:100%;border-radius:10px;background:linear-gradient(180deg, rgba(255,204,0,0.04), transparent)}
+    .promos h1{margin:0;color:var(--accent);font-size:22px}
+    .promos h2{margin:8px 0 0 0;font-size:18px}
+    .promos p{margin:6px 0 0 0;color:var(--muted)}
+    footer{text-align:center;margin-top:28px;color:#777;font-size:13px}
+
+    /* phone display */
+    .phone-display{font-weight:700;color:#fff;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.03);font-size:14px}
+
+    /* responsive */
+    @media (max-width:640px){
+      .logo img{height:48px}
+      .container{padding:16px}
+      .card{padding:18px}
+      .cta-btn{width:100%;text-align:center}
+      header{flex-direction:column;align-items:flex-start;gap:10px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <!-- logo - si querés cambiar la imagen poné la URL aquí -->
+        <img src="https://redzipa2.netlify.app/logo.png" alt="Logo Casino Vegas 365" />
+        <div>
+          <div class="brand-title">Casino GyC</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Las mejores ruletas y +6000 slots</div>
+        </div>
+      </div>
+
+      <!-- botón visible para editar el número / enlace -->
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="currentPhone" class="phone-display" title="Destino actual">Cargando...</div>
+        <button id="editBtn" class="edit-btn" aria-label="Editar número">✏️ Editar número</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card" role="region" aria-label="Llamada a la acción">
+        <a id="ctaLink" class="cta-btn" href="#" target="_blank" rel="noopener noreferrer">CREAR MI USUARIO</a>
+        <p class="small">Mínimo de carga $1000</p>
+
+        <div class="promos" aria-hidden="false">
+          <h1>PROMOS ACTIVAS</h1>
+          <h2>LAS MEJORES RULETAS DE +6000 SLOTS Y MÁS</h2>
+          <p>PAGOS 24/7 SIN LÍMITES DE RETIRO</p>
+        </div>
+      </section>
+
+      <!-- sección extra con info -->
+      <section style="margin-top:18px;color:var(--muted);font-size:14px">
+        <p><strong>Importante:</strong> podés ingresar un número (solo dígitos) o una URL completa. Si ingresás sólo números se construirá automáticamente un enlace de WhatsApp con el formato <code>https://wa.me/&lt;números&gt;</code>.</p>
+      </section>
+    </main>
+
+    <footer>
+      &copy; <span id="year"></span> Casino GyC - Todos los derechos reservados
+    </footer>
+  </div>
+
+  <script>
+    /*******************************
+     * CONFIGURACIÓN:
+     * Cambiá el valor por defecto aquí si querés:
+     *  - puede ser sólo dígitos: "5491123456789"
+     *  - o una URL completa: "https://wa.link/abcd" ó "https://api.whatsapp.com/send?phone=5491123456789"
+     *******************************/
+    (function(){
+      const STORAGE_KEY = 'landing_cta_destino_v1';
+
+      // valor por defecto si no existe en localStorage
+      const defaultDestino = '5491123456789'; // <-- cambiar aquí si querés otro por defecto
+
+      const ctaLink = document.getElementById('ctaLink');
+      const currentPhone = document.getElementById('currentPhone');
+      const editBtn = document.getElementById('editBtn');
+      const yearSpan = document.getElementById('year');
+
+      // utilidad: decide si es URL completa
+      function isFullUrl(value){
+        try{
+          const u = new URL(value);
+          return !!u;
+        }catch(e){
+          return false;
+        }
+      }
+
+      // utilidad: limpiar y validar dígitos
+      function onlyDigits(value){
+        return value.replace(/\D+/g,'');
+      }
+
+      // Construye el href final:
+      // - si el usuario ingresó una URL completa, la usamos tal cual
+      // - si ingresó solo dígitos, construimos https://wa.me/<digits>
+      function buildHref(value){
+        if(!value) return '#';
+        value = value.trim();
+        if(isFullUrl(value)) return value;
+        // si tiene espacios o símbolos, quedate con dígitos
+        const digits = onlyDigits(value);
+        if(!digits) return '#';
+        // Si el usuario ya incluye el prefijo '00' o '+' no hace falta, wa.me necesita solo el número internacional sin signos
+        return 'https://wa.me/' + digits;
+      }
+
+      // Muestra el texto actual (para el admin)
+      function displayCurrent(value){
+        if(!value) { currentPhone.textContent = 'No configurado'; return; }
+        if(isFullUrl(value)){
+          currentPhone.textContent = value.length > 40 ? value.slice(0,37)+'...' : value;
+          currentPhone.title = value;
+        } else {
+          const digits = onlyDigits(value);
+          currentPhone.textContent = '+' + digits;
+          currentPhone.title = 'wa.me/' + digits;
+        }
+      }
+
+      // lee localStorage o pone default
+      function loadDestino(){
+        try{
+          const s = localStorage.getItem(STORAGE_KEY);
+          return s ? s : defaultDestino;
+        }catch(e){
+          return defaultDestino;
+        }
+      }
+
+      // guarda
+      function saveDestino(val){
+        try{
+          localStorage.setItem(STORAGE_KEY, val);
+        }catch(e){
+          // ignore
+        }
+      }
+
+      // inicializar
+      function init(){
+        const destino = loadDestino();
+        const href = buildHref(destino);
+        ctaLink.href = href;
+        displayCurrent(destino);
+        yearSpan.textContent = new Date().getFullYear();
+      }
+
+      // evento editar
+      editBtn.addEventListener('click', function(){
+        const previo = loadDestino();
+        // prompt amigable
+        const input = prompt(
+`Editar destino de "CREAR MI USUARIO":
+- Ingresá un número (solo dígitos) -> se construye https://wa.me/<números>
+- O pegá una URL completa (ej: https://wa.link/abcd)
+Valor actual: ${previo || '(vacío)'}`, previo || ''
+        );
+        if(input === null) return; // canceló
+
+        const trimmed = input.trim();
+        if(trimmed === ''){
+          if(!confirm('Ingresaste un valor vacío. ¿Querés eliminar el destino y dejarlo sin link?')) return;
+          saveDestino('');
+          ctaLink.href = '#';
+          displayCurrent('');
+          return;
+        }
+
+        // si parece un número, validamos que haya al menos 6 dígitos
+        const digitsOnly = onlyDigits(trimmed);
+        if(!isFullUrl(trimmed) && digitsOnly.length < 6){
+          alert('Número inválido: ingresá al menos 6 dígitos o pega una URL válida.');
+          return;
+        }
+
+        // guardamos y actualizamos
+        saveDestino(trimmed);
+        ctaLink.href = buildHref(trimmed);
+        displayCurrent(trimmed);
+        alert('Destino actualizado correctamente.');
+      });
+
+      // init al cargar
+      init();
+    })();
+  </script>
+</body>
+</html>
